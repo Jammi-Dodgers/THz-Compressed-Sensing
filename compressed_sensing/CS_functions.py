@@ -1,4 +1,4 @@
-import warnings
+import warnings, os
 import numpy as np
 from scipy import fft as spfft
 from sklearn.linear_model import Lasso
@@ -16,7 +16,20 @@ def open_dataset(file_name, file_type):
         raise ValueError("{0:} is not a recognised file type.".format(file_type))
     return array
 
-def compressed_sensing(samples, locations, total_points, alpha, domain= "IDCT"):
+def open_training_dataset(training_dataset_number):
+
+    training_directory = "data\\training_set{0:}\\".format(training_dataset_number)
+    training_file_paths = [os.path.join(training_directory, file_name) for file_name in os.listdir(training_directory)]
+
+    training_data = np.array([np.genfromtxt(file_path, delimiter=",", filling_values= np.nan) for file_path in training_file_paths])
+
+    training_data = np.rollaxis(training_data, -1, 0) # move the last axis to the front
+    return training_data # training_interferograms, training_uncertainty = training_data  # now we can seperate the interferograms from the uncertainties. :)
+
+
+def compressed_sensing(samples, alpha, domain= "IDCT"): # samples should be a 1d array with np.nans to signify the missing data
+    total_points = len(samples) # number of pixels to reconstruct
+    locations = np.nonzero(~np.isnan(samples)) # pixel numbers of the known points
 
     cropping_matrix = np.identity(total_points, dtype= np.float16)
     cropping_matrix = cropping_matrix[locations] #cropping matrix operator
@@ -24,7 +37,7 @@ def compressed_sensing(samples, locations, total_points, alpha, domain= "IDCT"):
     measurement_matrix = np.matmul(cropping_matrix, dct_matrix)
 
     lasso = Lasso(alpha= alpha)
-    lasso.fit(measurement_matrix, samples)
+    lasso.fit(measurement_matrix, samples[locations])
 
     if domain == "DCT":
         return lasso.coef_
