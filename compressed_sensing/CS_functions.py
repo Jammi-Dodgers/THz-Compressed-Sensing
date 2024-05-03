@@ -85,3 +85,19 @@ def append_array_to_csv(array, csv_file):
 
 def argmin(array): # numpy argmin always flattens the array
     return np.unravel_index(np.argmin(array, axis=None), array.shape)
+
+def evaluate_score(detectors, targets, targets_uncertainty, regularization_coeffient= 1e-4): # finds the MAXIMUM chi-square from many interferograms.
+    targets = np.atleast_2d(targets)
+    targets_uncertainty = np.atleast_2d(targets_uncertainty)
+
+    score = 0
+    for target, uncertainty in zip(targets, targets_uncertainty):
+        sample = np.full_like(target, np.nan)
+        sample[detectors] = target[detectors]
+        result = compressed_sensing(sample, regularization_coeffient)
+        chi_square = np.linalg.norm((target -result) /uncertainty) #This is the chi-squared
+        if chi_square > score:
+            score = chi_square
+
+    return score
+
