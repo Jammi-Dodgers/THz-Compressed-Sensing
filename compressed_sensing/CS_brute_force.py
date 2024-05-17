@@ -2,7 +2,6 @@ import sys, random, math
 import numpy as np
 import CS_functions as cs
 from matplotlib import pyplot as plt
-from scipy import fft as spfft
 
 plt.rcParams.update({'font.size':16})
 #np.set_printoptions(threshold=sys.maxsize)
@@ -73,7 +72,7 @@ def find_nth_combination(N, r, idx):
     return None
 
 
-file_name = "1dmockanderrors15"
+file_name = "1dmockanderrors16"
 file_type = ".csv"
 
 optlocs_file = "data\\" + file_name +"_optlocs.csv"
@@ -111,4 +110,4 @@ for detectors in combo_generator: # THIS ITERABLE IS DANGEROUS!
         cs.append_array_to_csv(detectors, optlocs_file)
         print("new best saved!")
     if not iterations % 1000000:
-        print("{0:d} iterations complete. {1:.1f}% done".format(iterations,iterations/number_of_combonations))
+        print("{0:d} iterations complete. {1:.1f}% done".format(iterations, 100*iterations/number_of_combonations))
