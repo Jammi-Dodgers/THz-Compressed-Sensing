@@ -27,16 +27,16 @@ def open_training_dataset(training_dataset_number):
     return training_data # training_interferograms, training_uncertainty = training_data  # now we can seperate the interferograms from the uncertainties. :)
 
 
-def compressed_sensing(samples, alpha, domain= "IDCT"): # samples should be a 1d array with np.nans to signify the missing data
+def compressed_sensing(samples, alpha, domain= "IDCT", ignore_mean= True, dct_type= 2): # samples should be a 1d array with np.nans to signify the missing data
     total_points = len(samples) # number of pixels to reconstruct
     locations = np.nonzero(~np.isnan(samples)) # pixel numbers of the known points
 
     cropping_matrix = np.identity(total_points, dtype= np.float16)
     cropping_matrix = cropping_matrix[locations] #cropping matrix operator
-    dct_matrix = spfft.idct(np.identity(total_points), axis= 0, norm= "forward")
+    dct_matrix = spfft.idct(np.identity(total_points), axis= 0, norm= "forward", type= dct_type)
     measurement_matrix = np.matmul(cropping_matrix, dct_matrix)
 
-    lasso = Lasso(alpha= alpha)
+    lasso = Lasso(alpha= alpha, fit_intercept= ignore_mean)
     lasso.fit(measurement_matrix, samples[locations])
 
     if domain == "DCT":
