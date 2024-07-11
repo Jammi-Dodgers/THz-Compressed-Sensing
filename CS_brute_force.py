@@ -1,4 +1,4 @@
-import sys, random, math
+import sys, random, math, time
 import numpy as np
 import CS_functions as cs
 from matplotlib import pyplot as plt
@@ -72,7 +72,7 @@ def find_nth_combination(N, r, idx):
     return None
 
 
-file_name = "1dmockanderrors16"
+file_name = "1dmockanderrors12"
 file_type = ".csv"
 
 optlocs_file = "data\\" + file_name +"_optlocs.csv"
@@ -81,7 +81,7 @@ total_points = len(target)
 
 
 reduced_points = 4
-regularization_coeffient = 1e-4
+regularization_coeffient = 1e-3
 number_of_combonations = math.comb(total_points, reduced_points)
 
 #initial_detectors = [] #custom
@@ -89,6 +89,8 @@ initial_detectors = cs.subsample_1d(total_points, reduced_points, subsampling_me
 
 
 ################ INITIALISE AND RESET BRUTE FORCE ######################
+
+start_time = time.time()
 
 best_detectors = cs.subsample_1d(total_points, reduced_points, "regular")
 
@@ -109,5 +111,9 @@ for detectors in combo_generator: # THIS ITERABLE IS DANGEROUS!
         best_score = score
         cs.append_array_to_csv(detectors, optlocs_file)
         print("new best saved!")
-    if not iterations % 1000000:
+    if not iterations % 1000000: # give a progress update every million iterations
         print("{0:d} iterations complete. {1:.1f}% done".format(iterations, 100*iterations/number_of_combonations))
+
+end_time = time.time()
+
+print(end_time -start_time)
