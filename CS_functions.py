@@ -1,6 +1,7 @@
 import warnings, os, random, math
 import numpy as np
 from scipy import fft as spfft
+from scipy.constants import c as C
 from sklearn.linear_model import Lasso
 from sklearn.exceptions import ConvergenceWarning
 warnings.filterwarnings("ignore", category= ConvergenceWarning)
@@ -9,6 +10,12 @@ warnings.filterwarnings("ignore", category= ConvergenceWarning)
 
 def argmin(array): # numpy argmin always flattens the array
     return np.unravel_index(np.argmin(array, axis=None), array.shape)
+
+def gaussian(x, center, FWHM):
+    sigma = (8 *np.log(2))**-0.5 *FWHM
+    exponent = -(1/2) *(x -center)**2 /(sigma**2)
+    normalisation_coeffient = 0.5/np.sum(np.abs(np.exp(exponent))) #1 /(sigma *(2*np.pi)**0.5)
+    return normalisation_coeffient *np.exp(exponent)
 
 def subsample_1d(total_points, reduced_points, subsampling_method = "random"):
 
@@ -87,6 +94,16 @@ def find_nth_combination(N, r, idx):
             return tuple(result)
     
     return None
+
+def generate_interferogram(array_length, pixel_pitch, central_freq, FWHM_freq, theta): # (pixels), (m), (Hz), (Hz), (degrees), (as a fraction of the peak), (number of 'frames')
+    central_wn = 2*np.sin(np.deg2rad(theta)) *(central_freq) /C #periodicity of the fringes as it appears on the camera in m^-1
+    FWHM_wn = 2*np.sin(np.deg2rad(theta)) *(FWHM_freq) /C # in m^-1
+
+    wns = np.fft.rfftfreq(array_length, pixel_pitch)
+    amplitudes = gaussian(wns, central_wn, FWHM_wn)
+    intensity = np.fft.irfft(amplitudes, norm= "forward")
+    intensity = np.fft.fftshift(intensity)
+    return intensity
 
 ############FILE ORGANISATION FUNCTIONS#################
 
