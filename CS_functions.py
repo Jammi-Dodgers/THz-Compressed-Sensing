@@ -172,7 +172,7 @@ def compressed_sensing(samples, alpha, domain= "IDCT", ignore_mean= False, dct_t
     else:
         raise ValueError("{0:} is not a valid domain. Try 'DCT' or 'IDCT'.".format(domain))
 
-def evaluate_score(detectors, targets, targets_uncertainty, regularization_coeffient= 1e-3): # finds the MAXIMUM chi-square from many interferograms.
+def evaluate_score(detectors, targets, targets_uncertainty, regularization_coeffient= 1e-3, domain= "IDCT"): # finds the MAXIMUM chi-square from many interferograms.
     targets = np.atleast_2d(targets)
     targets_uncertainty = np.atleast_2d(targets_uncertainty)
 
@@ -180,8 +180,23 @@ def evaluate_score(detectors, targets, targets_uncertainty, regularization_coeff
     for target, uncertainty in zip(targets, targets_uncertainty):
         sample = np.full_like(target, np.nan)
         sample[detectors] = target[detectors]
-        result = compressed_sensing(sample, regularization_coeffient)
-        chi_square = np.linalg.norm((target -result) /uncertainty) #This is the chi-squared
+
+        match domain:
+            case "IDCT":
+                result = compressed_sensing(sample, regularization_coeffient)
+                chi_square = np.linalg.norm((target -result) /uncertainty) #This is the chi-squared
+            case "DCT":
+                result_DCT = compressed_sensing(sample, regularization_coeffient, domain= "DCT", dct_type= 1)
+                target_DCT = spfft.dct(target, norm= "forward", type= 1)
+                chi_square = np.linalg.norm((target_DCT -result_DCT)) #This is the least squares
+            case "FFT":
+                result = compressed_sensing(sample, regularization_coeffient)
+                result_powspec = np.abs(np.fft.rfft(result, norm= "ortho"))
+                target_powspec = np.abs(np.fft.rfft(target, norm= "ortho"))
+                chi_square = np.linalg.norm((target_powspec -result_powspec)) #This is the least squares
+            case _:
+                raise ValueError("{0:s} is not a recognised domain! Try 'IDCT', 'DCT' or 'FFT'.".format(domain))
+
         if chi_square > score:
             score = chi_square
 
