@@ -72,7 +72,7 @@ def find_nth_combination(N, r, idx):
     return None
 
 
-file_name = "1dmockanderrors12"
+file_name = "1dmockanderrors17"
 file_type = ".csv"
 
 optlocs_file = "data\\" + file_name +"_optlocs.csv"
