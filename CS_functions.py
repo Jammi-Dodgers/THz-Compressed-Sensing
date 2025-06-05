@@ -95,7 +95,7 @@ def find_nth_combination(N, r, idx):
     
     return None
 
-def generate_interferogram(array_length, pixel_pitch, central_freq, FWHM_freq, theta): # (pixels), (m), (Hz), (Hz), (degrees), (as a fraction of the peak), (number of 'frames')
+def generate_interferogram(array_length, pixel_pitch, central_freq, FWHM_freq, theta, read_noise_sigma = 0): # (pixels), (m), (Hz), (Hz), (degrees), (as a fraction of the peak)
     central_wn = 2*np.sin(np.deg2rad(theta)) *(central_freq) /C #periodicity of the fringes as it appears on the camera in m^-1
     FWHM_wn = 2*np.sin(np.deg2rad(theta)) *(FWHM_freq) /C # in m^-1
 
@@ -103,6 +103,9 @@ def generate_interferogram(array_length, pixel_pitch, central_freq, FWHM_freq, t
     amplitudes = gaussian(wns, central_wn, FWHM_wn)
     intensity = np.fft.irfft(amplitudes, norm= "forward")
     intensity = np.fft.fftshift(intensity)
+
+    intensity += np.random.normal(0, read_noise_sigma,  array_length)
+
     return intensity
 
 ############FILE ORGANISATION FUNCTIONS#################
