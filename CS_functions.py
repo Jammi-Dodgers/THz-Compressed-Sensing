@@ -14,7 +14,7 @@ def argmin(array): # numpy argmin always flattens the array
 def gaussian(x, center, FWHM):
     sigma = (8 *np.log(2))**-0.5 *FWHM
     exponent = -(1/2) *(x -center)**2 /(sigma**2)
-    normalisation_coeffient = 0.5/np.sum(np.abs(np.exp(exponent))) #1 /(sigma *(2*np.pi)**0.5)
+    normalisation_coeffient = 0.5/np.sum(np.abs(np.exp(exponent))) #1 /(sigma *(2*np.pi)**0.5) # This is vunrable to numerical errors if the exponent is too large or too small.
     return normalisation_coeffient *np.exp(exponent)
 
 def subsample_1d(total_points, reduced_points, subsampling_method = "random"):
