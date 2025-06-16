@@ -101,7 +101,7 @@ def generate_interferogram(array_length, pixel_pitch, central_freq, FWHM_freq, t
 
     wns = np.fft.rfftfreq(array_length, pixel_pitch)
     amplitudes = gaussian(wns, central_wn, FWHM_wn)
-    intensity = np.fft.irfft(amplitudes, norm= "forward")
+    intensity = np.fft.irfft(amplitudes, norm= "forward", n= array_length)
     intensity = np.fft.fftshift(intensity)
 
     intensity += np.random.normal(0, read_noise_sigma,  array_length)
