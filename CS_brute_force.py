@@ -68,15 +68,13 @@ def find_nth_combination(N, r, idx):
         
         if r == 0:
             return tuple(result)
-    
-    return None
 
 
-file_name = "1dmockanderrors17"
+file_name = "1dmockanderrors25"
 file_type = ".csv"
 
 optlocs_file = "data\\" + file_name +"_optlocs.csv"
-target, uncertainties = cs.open_dataset(file_name, file_type)
+target, target_err = cs.open_dataset(file_name, file_type)
 total_points = len(target)
 
 
@@ -84,19 +82,15 @@ reduced_points = 4
 regularization_coeffient = 1e-3
 number_of_combonations = math.comb(total_points, reduced_points)
 
-#initial_detectors = [] #custom
-initial_detectors = cs.subsample_1d(total_points, reduced_points, subsampling_method= "centered")
-
 
 ################ INITIALISE AND RESET BRUTE FORCE ######################
 
 start_time = time.time()
 
-best_detectors = cs.subsample_1d(total_points, reduced_points, "regular")
-
-best_score = cs.evaluate_score(best_detectors, target, uncertainties, regularization_coeffient)
-
 combo_generator = (find_nth_combination(total_points, reduced_points, random_index) for random_index in random_range(math.comb(total_points, reduced_points)))
+
+best_detectors = np.array(next(combo_generator)) #cs.subsample_1d(total_points, reduced_points, "regular")
+best_score = cs.evaluate_score(best_detectors, target, target_err, regularization_coeffient)
 
 ################# TRUE BRUTE FORCE ####################
 
@@ -105,15 +99,17 @@ for detectors in combo_generator: # THIS ITERABLE IS DANGEROUS!
     iterations += 1
     detectors = np.array(detectors)
 
-    score = cs.evaluate_score(detectors, target, uncertainties, regularization_coeffient)
+    score = cs.evaluate_score(detectors, target, target_err, regularization_coeffient)
 
     if score < best_score:
         best_score = score
         cs.append_array_to_csv(detectors, optlocs_file)
         print("new best saved!")
+        best_iteration = iterations
+        best_detectors = np.copy(detectors)
     if not iterations % 1000000: # give a progress update every million iterations
         print("{0:d} iterations complete. {1:.1f}% done".format(iterations, 100*iterations/number_of_combonations))
 
-end_time = time.time()
-
-print(end_time -start_time)
+runtime = time.time() -start_time
+print(f"Brute Force searched for {runtime} seconds and found a solution after {runtime *best_iteration/iterations} seconds")
+print(*best_detectors, sep= ",")
