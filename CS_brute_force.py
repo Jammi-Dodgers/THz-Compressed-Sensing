@@ -45,29 +45,6 @@ def random_range(start, stop=None, step=None):
         # Calculate the next value in the sequence.
         #value = (value*multiplier + offset) % modulus
         value = (value +offset) % modulus #removing the multiplier makes it less random but more reliable for extremely large numbers (>1e13)
-    
-
-# made by openai (but debugged by me because robots are not taking over the world anytime soon!)
-def find_nth_combination(N, r, idx):
-    num_combinations = math.comb(N, r)
-    
-    if num_combinations <= idx :
-        raise ValueError("idx is larger than the total number of combinations")
-    
-    result = []
-    n = 0
-    while r > 0:
-        num_combinations = math.comb(N -n -1, r - 1)
-        if num_combinations <= idx:
-            n += 1
-            idx -= num_combinations
-        else:
-            result.append(n)
-            n += 1
-            r -= 1
-        
-        if r == 0:
-            return tuple(result)
 
 
 file_name = "1dmockanderrors25"
@@ -87,7 +64,7 @@ number_of_combonations = math.comb(total_points, reduced_points)
 
 start_time = time.time()
 
-combo_generator = (find_nth_combination(total_points, reduced_points, random_index) for random_index in random_range(math.comb(total_points, reduced_points)))
+combo_generator = (cs.find_nth_combination(total_points, reduced_points, random_index) for random_index in random_range(math.comb(total_points, reduced_points)))
 
 best_detectors = np.array(next(combo_generator)) #cs.subsample_1d(total_points, reduced_points, "regular")
 best_score = cs.evaluate_score(best_detectors, target, target_err, regularization_coeffient)
