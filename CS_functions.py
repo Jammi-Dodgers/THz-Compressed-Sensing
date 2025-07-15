@@ -1,6 +1,6 @@
 import warnings, os, random, math, itertools
 import numpy as np
-from scipy import fft as spfft
+from scipy import fft as spfft, interpolate as spinterp
 from scipy.constants import c as C
 from sklearn.linear_model import Lasso
 from sklearn.exceptions import ConvergenceWarning
@@ -29,6 +29,12 @@ def subsample_1d(total_points, reduced_points, subsampling_method = "random"):
     subsampled_points = np.sort(subsampled_points) #Nessisary only for optimisation.
 
     return subsampled_points
+
+def interpolate(y):
+    index = np.arange(len(y))
+    interp_index = np.arange(0, len(y) -0.9, 0.1)
+    interp = spinterp.interp1d(index, y, kind= "quadratic")
+    return interp(interp_index)
 
 # made by Thomas Lux on Stack Overflow
 # Return a randomized "range" using a Linear Congruential Generator
@@ -146,7 +152,12 @@ def open_csv(optlocs_file, number_of_columns= None): #works with inconsistant nu
     return full_data
 
 def append_array_to_csv(array, csv_file):
-    with open(csv_file, 'a') as file:
+    if os.path.exists(csv_file):
+        readwrite_mode = 'a' # append to the file
+    else:
+        readwrite_mode = 'w' # create a new file
+
+    with open(csv_file, readwrite_mode) as file:
         array_string = np.array2string(array, separator=',').replace('\n', '')[1:-1]
         file.write(array_string +"\n")
         file.close()
