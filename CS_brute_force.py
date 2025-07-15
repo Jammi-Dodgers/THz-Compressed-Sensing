@@ -1,7 +1,8 @@
-import sys, random, math, time
+import os, random, math, time
 import numpy as np
 import CS_functions as cs
 from matplotlib import pyplot as plt
+os.chdir(os.path.dirname(__file__))
 
 plt.rcParams.update({'font.size':16})
 #np.set_printoptions(threshold=sys.maxsize)
@@ -47,7 +48,7 @@ def random_range(start, stop=None, step=None):
         value = (value +offset) % modulus #removing the multiplier makes it less random but more reliable for extremely large numbers (>1e13)
 
 
-file_name = "1dmockanderrors25"
+file_name = "1dmockanderrors27"
 file_type = ".csv"
 
 optlocs_file = "data\\" + file_name +"_optlocs.csv"
