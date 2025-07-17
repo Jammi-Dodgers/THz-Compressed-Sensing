@@ -30,11 +30,19 @@ def subsample_1d(total_points, reduced_points, subsampling_method = "random"):
 
     return subsampled_points
 
-def interpolate(y):
-    index = np.arange(len(y))
-    interp_index = np.arange(0, len(y) -0.9, 0.1)
-    interp = spinterp.interp1d(index, y, kind= "quadratic")
-    return interp(interp_index)
+def interpolate(y, method= "quadratic"):
+    match method:
+        case 'linear'|'nearest'|'nearest-up'|'zero'|'slinear'|'quadratic'|'cubic'|'previous'|'next':
+            index = np.arange(len(y))
+            interp_index = np.linspace(0, len(y)-1, 10*len(y))
+            interp = spinterp.interp1d(index, y, kind= method)
+            return interp(interp_index)
+        case 'fourier':
+            Y = np.fft.rfft(y, norm= "forward")
+            Y = np.pad(Y, (0, int(9*len(Y)))) # ONLY WORKS IF THERE ARE NO HIGH FREQUENCY COMPONENTS
+            return np.fft.irfft(Y, n= int(10*len(y)), norm= "forward")
+        case _:
+            print(f"ERROR! {method} is not a recognised interpolation method.")
 
 # made by Thomas Lux on Stack Overflow
 # Return a randomized "range" using a Linear Congruential Generator
