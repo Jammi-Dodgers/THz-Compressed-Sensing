@@ -48,7 +48,7 @@ def random_range(start, stop=None, step=None):
         value = (value +offset) % modulus #removing the multiplier makes it less random but more reliable for extremely large numbers (>1e13)
 
 
-file_name = "1dmockanderrors27"
+file_name = "1dmockanderrors26"
 file_type = ".csv"
 
 optlocs_file = "data\\" + file_name +"_optlocs.csv"
@@ -56,7 +56,7 @@ target, target_err = cs.open_dataset(file_name, file_type)
 total_points = len(target)
 
 
-reduced_points = 5
+reduced_points = 7
 regularization_coeffient = 1e-3
 number_of_combonations = math.comb(total_points, reduced_points)
 
