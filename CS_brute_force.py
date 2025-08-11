@@ -56,7 +56,7 @@ target, target_err = cs.open_dataset(file_name, file_type)
 total_points = len(target)
 
 
-reduced_points = 7
+reduced_points = 50
 regularization_coeffient = 1e-3
 number_of_combonations = math.comb(total_points, reduced_points)
 
@@ -67,12 +67,13 @@ start_time = time.time()
 
 combo_generator = (cs.find_nth_combination(total_points, reduced_points, random_index) for random_index in random_range(math.comb(total_points, reduced_points)))
 
+iterations = 0; best_iteration = 0
+
 best_detectors = np.array(next(combo_generator)) #cs.subsample_1d(total_points, reduced_points, "regular")
 best_score = cs.evaluate_score(best_detectors, target, target_err, regularization_coeffient)
 
 ################# TRUE BRUTE FORCE ####################
 
-iterations = 0
 for detectors in combo_generator: # THIS ITERABLE IS DANGEROUS!
     iterations += 1
     detectors = np.array(detectors)
@@ -89,5 +90,5 @@ for detectors in combo_generator: # THIS ITERABLE IS DANGEROUS!
         print("{0:d} iterations complete. {1:.1f}% done".format(iterations, 100*iterations/number_of_combonations))
 
 runtime = time.time() -start_time
-print(f"Brute Force searched for {runtime} seconds and found a solution after {runtime *best_iteration/iterations} seconds")
+print(f"Brute Force searched for {runtime} seconds and found a solution after {runtime *best_iteration/(iterations+1)} seconds")
 print(*best_detectors, sep= ",")
