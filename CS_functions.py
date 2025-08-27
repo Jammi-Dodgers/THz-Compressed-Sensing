@@ -32,6 +32,16 @@ def subsample_1d(total_points, reduced_points, subsampling_method = "random"):
 
 def interpolate(y, method= "quadratic"):
     match method:
+        case "pchip":
+            index = np.arange(len(y))
+            interp_index = np.linspace(0, len(y)-1, 10*len(y))
+            interp = spinterp.PchipInterpolator(index, y) # discontinuities in the 2nd deriviative are allowed.
+            return interp(interp_index)
+        case "gaussian":
+            index = np.atleast_2d(np.arange(len(y))).T
+            interp_index = np.atleast_2d(np.linspace(0, len(y)-1, 10*len(y))).T
+            interp = spinterp.RBFInterpolator(index, y, kernel= method, epsilon= 1) # not sure what this interpolater does?
+            return interp(interp_index)
         case 'linear'|'nearest'|'nearest-up'|'zero'|'slinear'|'quadratic'|'cubic'|'previous'|'next':
             index = np.arange(len(y))
             interp_index = np.linspace(0, len(y)-1, 10*len(y))
