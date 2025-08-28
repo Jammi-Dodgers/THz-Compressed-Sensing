@@ -133,6 +133,20 @@ def generate_interferogram(array_length, pixel_pitch, central_freq, FWHM_freq, t
 
     return intensity
 
+def generate_interferogram2(array_length, pixel_pitch, central_freqs, FWHM_envelope, theta, read_noise_sigma = 0): # (pixels), (m), (Hz), (m), (degrees), (as a fraction of the peak)
+    # FWHM_envelope should equal (2*C*ln(2)) / (sin(theta)*FWHM_freq*pi) but it is slightly different due to ?? windowing? picket fence effect?
+    central_freqs = np.atleast_1d(central_freqs)
+    interferogram = np.zeros(array_length, dtype= float)
+    displacement = np.arange(-(array_length//2), (array_length+1)//2) *pixel_pitch #in m
+
+    for central_freq in central_freqs:
+        kappa = 2*np.sin(np.deg2rad(theta))/C * central_freq # apparent wavenumber
+        interferogram += np.cos(2*np.pi*displacement*kappa)
+
+    interferogram *= np.exp(-4*np.log(2)*displacement**2 *FWHM_envelope**-2) # modulate by the beam size.
+    interferogram += np.random.normal(0, read_noise_sigma, array_length)
+    return interferogram
+
 ############FILE ORGANISATION FUNCTIONS#################
 
 def open_dataset(file_name, file_type):
