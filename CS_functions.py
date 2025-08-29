@@ -11,6 +11,12 @@ warnings.filterwarnings("ignore", category= ConvergenceWarning)
 def argmin(array): # numpy argmin always flattens the array
     return np.unravel_index(np.argmin(array, axis=None), array.shape)
 
+def chi_squared(measurement, model, uncertainty):
+    return np.sum(((measurement -model)/uncertainty)**2)
+
+def RSS(measurement, model):
+    return np.sum((measurement -model)**2)
+
 def gaussian(x, center, FWHM):
     sigma = (8 *np.log(2))**-0.5 *FWHM
     exponent = -(1/2) *(x -center)**2 /(sigma**2)
@@ -133,11 +139,11 @@ def generate_interferogram(array_length, pixel_pitch, central_freq, FWHM_freq, t
 
     return intensity
 
-def generate_interferogram2(array_length, pixel_pitch, central_freqs, FWHM_envelope, theta, read_noise_sigma = 0): # (pixels), (m), (Hz), (m), (degrees), (as a fraction of the peak)
+def generate_interferogram2(array_length, pixel_pitch, central_freqs, FWHM_envelope, theta, read_noise_sigma = 0, displacement_shift = 0): # (pixels), (m), (Hz), (m), (degrees), (as a fraction of the peak), (m)
     # FWHM_envelope should equal (2*C*ln(2)) / (sin(theta)*FWHM_freq*pi) but it is slightly different due to ?? windowing? picket fence effect?
     central_freqs = np.atleast_1d(central_freqs)
     interferogram = np.zeros(array_length, dtype= float)
-    displacement = np.arange(-(array_length//2), (array_length+1)//2) *pixel_pitch #in m
+    displacement = np.arange(-(array_length//2), (array_length+1)//2) *pixel_pitch +displacement_shift #in m
 
     for central_freq in central_freqs:
         kappa = 2*np.sin(np.deg2rad(theta))/C * central_freq # apparent wavenumber
@@ -231,16 +237,16 @@ def evaluate_score(detectors, targets, targets_uncertainty, regularization_coeff
         match domain:
             case "IDCT":
                 result = compressed_sensing(sample, regularization_coeffient)
-                chi_square = np.linalg.norm((target -result) /uncertainty) #This is the chi-squared
+                chi_square = chi_squared(target, result, uncertainty)
             case "DCT":
                 result_DCT = compressed_sensing(sample, regularization_coeffient, domain= "DCT", dct_type= 1)
                 target_DCT = spfft.dct(target, norm= "forward", type= 1)
-                chi_square = np.linalg.norm((target_DCT -result_DCT)) #This is the least squares
+                chi_square = RSS(target_DCT, result_DCT)
             case "FFT":
                 result = compressed_sensing(sample, regularization_coeffient)
                 result_powspec = np.abs(np.fft.rfft(result, norm= "ortho"))
                 target_powspec = np.abs(np.fft.rfft(target, norm= "ortho"))
-                chi_square = np.linalg.norm((target_powspec -result_powspec)) #This is the least squares
+                chi_square = RSS(target_powspec, result_powspec)
             case _:
                 raise ValueError("{0:s} is not a recognised domain! Try 'IDCT', 'DCT' or 'FFT'.".format(domain))
 
@@ -333,7 +339,7 @@ def RIP(detector, target):
 
 ############OPTIMISATION FUNCTIONS#################
 
-def simulated_annealing(reduced_points, target, uncertainty, regularization_coeffient =1e-3, subsampling_method= "regular", min_seperation= 1, iterations= 30000, max_temp= 31, cooling= 0.998):
+def simulated_annealing(reduced_points, target, uncertainty, regularization_coeffient =1e-3, subsampling_method= "regular", min_seperation= 1, iterations= 10000, max_temp= 21, cooling= 0.997):
 
     temps = []
     scores = np.array([])
@@ -395,7 +401,7 @@ def simulated_annealing(reduced_points, target, uncertainty, regularization_coef
     return detectors, score
 
 
-def MCMC_metropolis(reduced_points, target, uncertainty, regularization_coeffient =1e-3, subsampling_method= "regular", min_seperation= 1, iterations= 30000, stepsize= 31):
+def MCMC_metropolis(reduced_points, target, uncertainty, regularization_coeffient =1e-3, subsampling_method= "regular", min_seperation= 1, iterations= 10000, stepsize= 7):
 
     total_points = len(target)
 
