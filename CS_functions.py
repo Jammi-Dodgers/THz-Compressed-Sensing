@@ -17,6 +17,14 @@ def chi_squared(measurement, model, uncertainty):
 def RSS(measurement, model):
     return np.sum((measurement -model)**2)
 
+def line_fit_through_origin(x, y):
+    """Fits y = m*x using least squares, returns m."""
+    mask = ~np.isnan(x) & ~np.isnan(y)
+    x = x[mask]
+    y = y[mask]
+    m = np.dot(x, y) / np.dot(x, x)
+    return m
+
 def gaussian(x, center, FWHM):
     sigma = (8 *np.log(2))**-0.5 *FWHM
     exponent = -(1/2) *(x -center)**2 /(sigma**2)
