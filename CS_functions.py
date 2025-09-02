@@ -233,9 +233,14 @@ def compressed_sensing(samples, alpha, domain= "IDCT", ignore_mean= False, dct_t
     else:
         raise ValueError("{0:} is not a valid domain. Try 'DCT' or 'IDCT'.".format(domain))
 
-def evaluate_score(detectors, targets, targets_uncertainty, regularization_coeffient= 1e-3, domain= "IDCT"): # finds the MAXIMUM chi-square from many interferograms.
+def evaluate_score(detectors, targets, targets_uncertainty =None, regularization_coeffient= 1e-3, domain= "IDCT", error_type= "RSS"): # finds the MAXIMUM error from many interferograms.
+    # DO NOT USE CHI SQUARED IN FOURIER DOMAIN
     targets = np.atleast_2d(targets)
-    targets_uncertainty = np.atleast_2d(targets_uncertainty)
+
+    if targets_uncertainty is None:
+        targets_uncertainty = np.ones_like(targets)
+    else:
+        targets_uncertainty = np.atleast_2d(targets_uncertainty)
 
     score = 0
     for target, uncertainty in zip(targets, targets_uncertainty):
@@ -244,22 +249,28 @@ def evaluate_score(detectors, targets, targets_uncertainty, regularization_coeff
 
         match domain:
             case "IDCT":
-                result = compressed_sensing(sample, regularization_coeffient)
-                chi_square = chi_squared(target, result, uncertainty)
+                result_to_evaluate = compressed_sensing(sample, regularization_coeffient)
+                target_to_evaluate = target
             case "DCT":
-                result_DCT = compressed_sensing(sample, regularization_coeffient, domain= "DCT", dct_type= 1)
-                target_DCT = spfft.dct(target, norm= "forward", type= 1)
-                chi_square = RSS(target_DCT, result_DCT)
+                result_to_evaluate = compressed_sensing(sample, regularization_coeffient, domain= "DCT", dct_type= 1)
+                target_to_evaluate = spfft.dct(target, norm= "forward", type= 1)
             case "FFT":
                 result = compressed_sensing(sample, regularization_coeffient)
-                result_powspec = np.abs(np.fft.rfft(result, norm= "ortho"))
-                target_powspec = np.abs(np.fft.rfft(target, norm= "ortho"))
-                chi_square = RSS(target_powspec, result_powspec)
+                result_to_evaluate = np.abs(np.fft.rfft(result, norm= "ortho"))
+                target_to_evaluate = np.abs(np.fft.rfft(target, norm= "ortho"))
             case _:
                 raise ValueError("{0:s} is not a recognised domain! Try 'IDCT', 'DCT' or 'FFT'.".format(domain))
+            
+        match error_type:
+            case "RSS":
+                error = RSS(target_to_evaluate, result_to_evaluate)
+            case "chi squared":
+                error = chi_squared(target_to_evaluate, result_to_evaluate, uncertainty)
+            case _:
+                raise ValueError("{0:s} is not a recognised error type! Try 'RSS' or 'chi squared'.".format(error_type))
 
-        if chi_square > score:
-            score = chi_square
+        if error > score:
+            score = error
 
     return score
 
