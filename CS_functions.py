@@ -17,6 +17,11 @@ def chi_squared(measurement, model, uncertainty):
 def RSS(measurement, model):
     return np.sum((measurement -model)**2)
 
+def closest(y, x, x0):
+    idx = np.argmin(np.abs(x -x0))
+    y0 = y[idx]
+    return y0
+
 def line_fit_through_origin(x, y):
     """Fits y = m*x using least squares, returns m."""
     mask = ~np.isnan(x) & ~np.isnan(y)
@@ -219,7 +224,7 @@ def compressed_sensing(samples, alpha, domain= "IDCT", ignore_mean= False, dct_t
 
     cropping_matrix = np.identity(total_points, dtype= np.float16)
     cropping_matrix = cropping_matrix[locations] #cropping matrix operator
-    dct_matrix = spfft.idct(np.identity(total_points), axis= 0, norm= norm, type= dct_type) # The transform does NOT get normalised by lasso and therefore the normalisation messes with alpha.
+    dct_matrix = spfft.idct(np.identity(total_points), axis= 0, norm= norm, type= dct_type) # The transform does NOT get normalised by lasso and therefore the normalisation messes with alpha. # supposed to be normalised such that the norm of each column and row is 1.
     measurement_matrix = np.matmul(cropping_matrix, dct_matrix)
 
     lasso = Lasso(alpha= alpha, fit_intercept= ignore_mean)
