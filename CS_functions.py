@@ -218,14 +218,18 @@ def append_array_to_csv(array, csv_file):
 
 ############COMPRESSED SENSING FUNCTIONS#################
 
-def compressed_sensing(samples, alpha, domain= "IDCT", ignore_mean= False, dct_type= 1, norm= "ortho"): # samples should be a 1d array with np.nans to signify the missing data
+def compressed_sensing(samples, alpha, domain= "IDCT", ignore_mean= False, dct_type= 1, norm= "forward"): # samples should be a 1d array with np.nans to signify the missing data
     total_points = len(samples) # number of pixels to reconstruct
     locations = np.nonzero(~np.isnan(samples)) # pixel numbers of the known points
 
     cropping_matrix = np.identity(total_points, dtype= np.float16)
     cropping_matrix = cropping_matrix[locations] #cropping matrix operator
-    dct_matrix = spfft.idct(np.identity(total_points), axis= 0, norm= norm, type= dct_type) # The transform does NOT get normalised by lasso and therefore the normalisation messes with alpha. # supposed to be normalised such that the norm of each column and row is 1.
+    dct_matrix = spfft.idct(np.identity(total_points), axis= 0, norm= norm, type= dct_type) # The transform does NOT get normalised by lasso and therefore the normalisation messes with alpha.
     measurement_matrix = np.matmul(cropping_matrix, dct_matrix)
+
+    if norm == "ortho":
+        # measurement_matrix *= np.sqrt(len(locations)) # normalisation used in the statistical learning with sparsity book. Very wierd, is this a mistake? "ortho" must be used.
+        measurement_matrix *= np.sqrt(total_points) # standard normalisation used by most other papers. "ortho" must be used.
 
     lasso = Lasso(alpha= alpha, fit_intercept= ignore_mean)
     lasso.fit(measurement_matrix, samples[locations])
