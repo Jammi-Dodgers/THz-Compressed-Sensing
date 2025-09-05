@@ -218,7 +218,7 @@ def append_array_to_csv(array, csv_file):
 
 ############COMPRESSED SENSING FUNCTIONS#################
 
-def compressed_sensing(samples, alpha, domain= "IDCT", ignore_mean= False, dct_type= 1, norm= "forward"): # samples should be a 1d array with np.nans to signify the missing data
+def compressed_sensing(samples, alpha, domain= "IDCT", ignore_mean= False, dct_type= 1, norm= "ortho"): # samples should be a 1d array with np.nans to signify the missing data
     total_points = len(samples) # number of pixels to reconstruct
     locations = np.nonzero(~np.isnan(samples)) # pixel numbers of the known points
 
