@@ -49,15 +49,17 @@ def random_range(start, stop=None, step=None):
 
 
 file_name = "1dmockanderrors31"
+training_file_name = "1dmockanderrors32"
 file_type = ".csv"
 
 optlocs_file = "data\\" + file_name +"_optlocs.csv"
 target, target_err = cs.open_dataset(file_name, file_type)
+training_target, training_err = cs.open_dataset(training_file_name, file_type)
 total_points = len(target)
 
 
-reduced_points = 8
-regularization_coeffient = 1e-3
+reduced_points = 5
+regularization_coeffient = 1e-2
 number_of_combonations = math.comb(total_points, reduced_points)
 
 
@@ -70,7 +72,7 @@ combo_generator = (cs.find_nth_combination(total_points, reduced_points, random_
 iterations = 0; best_iteration = 0
 
 best_detectors = np.array(next(combo_generator)) #cs.subsample_1d(total_points, reduced_points, "regular")
-best_score = cs.evaluate_score(best_detectors, target, target_err, regularization_coeffient)
+best_score = cs.evaluate_score(best_detectors, target, target_err, training_target, regularization_coeffient, "L2")
 
 ################# TRUE BRUTE FORCE ####################
 
@@ -78,7 +80,7 @@ for detectors in combo_generator: # THIS ITERABLE IS DANGEROUS!
     iterations += 1
     detectors = np.array(detectors)
 
-    score = cs.evaluate_score(detectors, target, target_err, regularization_coeffient)
+    score = cs.evaluate_score(detectors, target, target_err, training_target, regularization_coeffient, "L2")
 
     if score < best_score:
         best_score = score
@@ -90,5 +92,5 @@ for detectors in combo_generator: # THIS ITERABLE IS DANGEROUS!
         print("{0:d} iterations complete. {1:.1f}% done".format(iterations, 100*iterations/number_of_combonations))
 
 runtime = time.time() -start_time
-print(f"Brute Force searched for {runtime} seconds and found a solution after {runtime *best_iteration/(iterations+1)} seconds")
+print(f"Brute Force searched for {runtime} seconds and found a solution with a score of {best_score} after {runtime *best_iteration/(iterations+1)} seconds")
 print(*best_detectors, sep= ",")

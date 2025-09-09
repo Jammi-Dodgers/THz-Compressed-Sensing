@@ -238,12 +238,12 @@ def compressed_sensing(samples, alpha, domain= "IDCT", ignore_mean= False, dct_t
         return lasso.coef_
     elif domain == "IDCT":
         result = spfft.idct(lasso.coef_, norm= norm, type= dct_type)
+        if norm == "ortho": result *= np.sqrt(total_points)
         return result
     else:
         raise ValueError("{0:} is not a valid domain. Try 'DCT' or 'IDCT'.".format(domain))
 
-def evaluate_score(detectors, targets, targets_uncertainty =None, regularization_coeffient= 1e-3, domain= "IDCT", error_type= "RSS"): # finds the MAXIMUM error from many interferograms.
-    # DO NOT USE CHI SQUARED IN FOURIER DOMAIN
+def evaluate_score(detectors, targets, targets_uncertainty= None, noiseless= None, regularization_coeffient= 1e-3, error_type= "RSS"): # finds the MAXIMUM error from many interferograms.
     targets = np.atleast_2d(targets)
 
     if targets_uncertainty is None:
@@ -251,35 +251,36 @@ def evaluate_score(detectors, targets, targets_uncertainty =None, regularization
     else:
         targets_uncertainty = np.atleast_2d(targets_uncertainty)
 
-    score = 0
-    for target, uncertainty in zip(targets, targets_uncertainty):
+    if noiseless is None:
+        noiseless = targets
+        print("WARNING! Noiseless data not provided, assuming interferogram has no noise.")
+    else:
+        noiseless = np.atleast_2d(noiseless)
+
+    score = []
+    for target, uncertainty, noiseles in zip(targets, targets_uncertainty, noiseless):
         sample = np.full_like(target, np.nan)
         sample[detectors] = target[detectors]
 
-        match domain:
-            case "IDCT":
-                result_to_evaluate = compressed_sensing(sample, regularization_coeffient)
-                target_to_evaluate = target
-            case "DCT":
-                result_to_evaluate = compressed_sensing(sample, regularization_coeffient, domain= "DCT", dct_type= 1)
-                target_to_evaluate = spfft.dct(target, norm= "forward", type= 1)
-            case "FFT":
-                result = compressed_sensing(sample, regularization_coeffient)
-                result_to_evaluate = np.abs(np.fft.rfft(result, norm= "ortho"))
-                target_to_evaluate = np.abs(np.fft.rfft(target, norm= "ortho"))
-            case _:
-                raise ValueError("{0:s} is not a recognised domain! Try 'IDCT', 'DCT' or 'FFT'.".format(domain))
-            
         match error_type:
             case "RSS":
-                error = RSS(target_to_evaluate, result_to_evaluate)
+                result = compressed_sensing(sample, regularization_coeffient)
+                error = RSS(target, result)
             case "chi squared":
-                error = chi_squared(target_to_evaluate, result_to_evaluate, uncertainty)
+                result = compressed_sensing(sample, regularization_coeffient)
+                error = chi_squared(target, result, uncertainty)
+            case "L2":
+                result = compressed_sensing(sample, regularization_coeffient, domain= "DCT", norm= "ortho")
+                noiseles_dct = spfft.dct(noiseles, norm= "ortho", type= 1) /np.sqrt(len(noiseles))
+                error = np.linalg.norm(noiseles_dct -result) # L2 estimation error. estimation error is a crap name, it means the error in the DCT domain.
             case _:
-                raise ValueError("{0:s} is not a recognised error type! Try 'RSS' or 'chi squared'.".format(error_type))
+                raise ValueError("{0:s} is not a recognised error type! Try 'RSS', 'L2' or 'chi squared'.".format(error_type))
 
-        if error > score:
-            score = error
+        score.append(error)
+    
+    # score = max(score) # return the worst score
+    score = np.percentile(score, 95) # return a bad score
+    # score = np.mean(score) # return the average score
 
     return score
 
@@ -354,26 +355,32 @@ def RIP_from_Phi(Phi, s):
 
 def RIP(detector, target):
     total_points = len(target) # number of pixels to reconstruct
-    dct_target = spfft.dct(target, norm= "forward", type= 1)
+    dct_target = spfft.dct(target, norm= "ortho", type= 1)
     dct_target = np.abs(dct_target)
     sparsity = np.count_nonzero(dct_target > 0.1*dct_target.max())
 
     cropping_matrix = np.identity(total_points, dtype= np.float16)
     cropping_matrix = cropping_matrix[detector] #cropping matrix operator
-    dct_matrix = spfft.idct(np.identity(total_points), axis= 0, norm= "forward", type= 1) # The transform does NOT get normalised by lasso and therefore the normalisation messes with alpha.
+    dct_matrix = spfft.idct(np.identity(total_points), axis= 0, norm= "ortho", type= 1)
     measurement_matrix = np.matmul(cropping_matrix, dct_matrix)
 
     return RIP_from_phi(measurement_matrix, sparsity)
 
 ############OPTIMISATION FUNCTIONS#################
 
-def simulated_annealing(reduced_points, target, uncertainty, regularization_coeffient =1e-3, subsampling_method= "regular", min_seperation= 1, iterations= 10000, max_temp= 21, cooling= 0.997):
+def simulated_annealing(reduced_points, target, uncertainty= None, noiseless= None, regularization_coeffient =1e-3, error_type= "RSS", subsampling_method= "regular", min_seperation= 1, iterations= 10000, max_temp= 21, cooling= 0.997):
+
+    if uncertainty is None:
+        uncertainty = np.ones_like(target)
+    if noiseless is None:
+        noiseless = target
+        print("WARNING! Noiseless data not provided, assuming interferogram has no noise.")
 
     temps = []
     scores = np.array([])
     total_points = len(target)
     detectors = subsample_1d(total_points, reduced_points, subsampling_method)
-    score = new_score = evaluate_score(detectors, target, uncertainty, regularization_coeffient)
+    score = new_score = evaluate_score(detectors, target, uncertainty, noiseless, regularization_coeffient, error_type)
     target_temp = max_temp
     improvement = True
 
@@ -409,7 +416,7 @@ def simulated_annealing(reduced_points, target, uncertainty, regularization_coef
                 pass
 
         temps = temps + [[target_temp, np.linalg.norm(new_detectors -detectors, ord= 1)]] #L1 norm represents the number of times that the detectors were moved
-        new_score = evaluate_score(new_detectors, target, uncertainty, regularization_coeffient)
+        new_score = evaluate_score(new_detectors, target, uncertainty, noiseless, regularization_coeffient, error_type)
 
         if new_score < score:
             detectors = new_detectors
@@ -429,14 +436,20 @@ def simulated_annealing(reduced_points, target, uncertainty, regularization_coef
     return detectors, score
 
 
-def MCMC_metropolis(reduced_points, target, uncertainty, regularization_coeffient =1e-3, subsampling_method= "regular", min_seperation= 1, iterations= 10000, stepsize= 7):
+def MCMC_metropolis(reduced_points, target, uncertainty= None, noiseless= None, regularization_coeffient =1e-3, error_type= "RSS", subsampling_method= "regular", min_seperation= 1, iterations= 10000, stepsize= 7):
+
+    if uncertainty is None:
+        uncertainty = np.ones_like(target)
+    if noiseless is None:
+        noiseless = target
+        print("WARNING! Noiseless data not provided, assuming interferogram has no noise.")
 
     total_points = len(target)
 
     detectors = subsample_1d(total_points, reduced_points, subsampling_method)
     detector_configerations = np.array(detectors)
 
-    score = evaluate_score(detectors, target, uncertainty, regularization_coeffient)
+    score = evaluate_score(detectors, target, uncertainty, noiseless, regularization_coeffient, error_type)
     scores = np.array([score])
 
     if reduced_points == len(target):
@@ -472,8 +485,8 @@ def MCMC_metropolis(reduced_points, target, uncertainty, regularization_coeffien
                 #detector can't move.
                 pass
 
-        new_score = evaluate_score(new_detectors, target, uncertainty, regularization_coeffient)
-        acceptance = np.exp(score -new_score) # Normally MCMC uses `new_score /score` but I am looking for a minimum point so this scheme is better.
+        new_score = evaluate_score(new_detectors, target, uncertainty, noiseless, regularization_coeffient, error_type)
+        acceptance = np.exp(1 -new_score/score) # Normally MCMC uses `new_score /score` but I am looking for a minimum point so this scheme is better.
 
         detector_configerations = np.vstack((detector_configerations, new_detectors))
 
@@ -493,7 +506,13 @@ def MCMC_metropolis(reduced_points, target, uncertainty, regularization_coeffien
     return detectors, score
     
 
-def douglas_peucker(reduced_points, target, uncertainty, regularization_coeffient =1e-3):
+def douglas_peucker(reduced_points, target, uncertainty= None, noiseless= None, regularization_coeffient =1e-3, error_type= "RSS"):
+
+    if uncertainty is None:
+        uncertainty = np.ones_like(target)
+    if noiseless is None:
+        noiseless = target
+        print("WARNING! Noiseless data not provided, assuming interferogram has no noise.")
 
     detectors = np.array([], dtype= int)
 
@@ -503,25 +522,31 @@ def douglas_peucker(reduced_points, target, uncertainty, regularization_coeffien
     for n in range(1,reduced_points):
         samples = np.full_like(target, np.nan)
         samples[detectors] = target[detectors]
-        result = compressed_sensing(samples, regularization_coeffient, ignore_mean= False, dct_type= 1)
+        result = compressed_sensing(samples, regularization_coeffient, ignore_mean= False, dct_type= 1, norm= "ortho")
 
         new_detector = np.argsort(np.abs(target -result))[::-1] # argsort sorts from smallest to largest but I want largest to smallest
         new_detector = np.setdiff1d(new_detector, detectors, assume_unique= True)[0] # pick the first (largest) item
         detectors = np.append(detectors, new_detector)
 
-    score = evaluate_score(detectors, target, uncertainty, regularization_coeffient)
+    score = evaluate_score(detectors, target, uncertainty, noiseless, regularization_coeffient, error_type)
 
     return detectors, score
 
 
-def greedy(reduced_points, target, uncertainty, regularization_coeffient =1e-3, subsampling_method= "regular", iterations= 20):
+def greedy(reduced_points, target, uncertainty= None, noiseless= None, regularization_coeffient =1e-3, error_type= "RSS", subsampling_method= "regular", iterations= 20):
+
+    if uncertainty is None:
+        uncertainty = np.ones_like(target)
+    if noiseless is None:
+        noiseless = target
+        print("WARNING! Noiseless data not provided, assuming interferogram has no noise.")
 
     ################ INITIALISE AND RESET BRUTE FORCE ######################
 
     total_points = len(target)
 
     best_detectors = subsample_1d(total_points, reduced_points, subsampling_method)
-    best_score = evaluate_score(best_detectors, target, uncertainty, regularization_coeffient)
+    best_score = evaluate_score(best_detectors, target, uncertainty, noiseless, regularization_coeffient, error_type)
 
     ################# LIMITED BRUTE FORCE ###################
 
@@ -536,7 +561,7 @@ def greedy(reduced_points, target, uncertainty, regularization_coeffient =1e-3, 
                 detectors = np.copy(old_detectors)
                 detectors[np.array(moving_detectors)] = new_samples
 
-                score = evaluate_score(detectors, target, uncertainty, regularization_coeffient)
+                score = evaluate_score(detectors, target, uncertainty, noiseless, regularization_coeffient, error_type)
 
                 if score < best_score:
                     best_detectors = np.copy(detectors)
