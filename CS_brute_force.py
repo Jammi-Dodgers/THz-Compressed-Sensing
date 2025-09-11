@@ -58,7 +58,7 @@ training_target, training_err = cs.open_dataset(training_file_name, file_type)
 total_points = len(target)
 
 
-reduced_points = 5
+reduced_points = 45
 regularization_coeffient = 1e-2
 number_of_combonations = math.comb(total_points, reduced_points)
 

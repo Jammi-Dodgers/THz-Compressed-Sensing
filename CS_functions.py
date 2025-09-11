@@ -368,7 +368,7 @@ def RIP(detector, target):
 
 ############OPTIMISATION FUNCTIONS#################
 
-def simulated_annealing(reduced_points, target, uncertainty= None, noiseless= None, regularization_coeffient =1e-3, error_type= "RSS", subsampling_method= "regular", min_seperation= 1, iterations= 10000, max_temp= 21, cooling= 0.997):
+def simulated_annealing(reduced_points, target, uncertainty= None, noiseless= None, regularization_coeffient =1e-3, error_type= "RSS", subsampling_method= "regular", min_seperation= 1, iterations= 10000, max_temp= 31, cooling= 0.995):
 
     if uncertainty is None:
         uncertainty = np.ones_like(target)
@@ -436,7 +436,7 @@ def simulated_annealing(reduced_points, target, uncertainty= None, noiseless= No
     return detectors, score
 
 
-def MCMC_metropolis(reduced_points, target, uncertainty= None, noiseless= None, regularization_coeffient =1e-3, error_type= "RSS", subsampling_method= "regular", min_seperation= 1, iterations= 10000, stepsize= 7):
+def MCMC_metropolis(reduced_points, target, uncertainty= None, noiseless= None, regularization_coeffient =1e-3, error_type= "RSS", subsampling_method= "regular", min_seperation= 1, iterations= 10000, stepsize= 3):
 
     if uncertainty is None:
         uncertainty = np.ones_like(target)
