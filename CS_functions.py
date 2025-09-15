@@ -553,10 +553,10 @@ def greedy(reduced_points, target, uncertainty= None, noiseless= None, regulariz
     for n in range(iterations):
         old_detectors = np.copy(best_detectors)
 
-        pick_detectors = (find_nth_combination(reduced_points, 1, random_index) for random_index in np.arange(math.comb(reduced_points, 1)))
+        pick_detectors = (index for index in range(reduced_points)) 
         for moving_detectors in pick_detectors:
 
-            pick_samples = (find_nth_combination(total_points, 1, random_index) for random_index in np.arange(math.comb(total_points, 1)))
+            pick_samples = (index for index in range(total_points) if index not in old_detectors)
             for new_samples in pick_samples:
                 detectors = np.copy(old_detectors)
                 detectors[np.array(moving_detectors)] = new_samples
