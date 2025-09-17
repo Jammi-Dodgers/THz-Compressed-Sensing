@@ -19,14 +19,14 @@ interferogram_length = len(target)
 
 for n in range(iterations):
 
-    detectors, score = cs.simulated_annealing(number_of_sensors, target, np.ones_like(target_err),
-                                              regularization_coeffient =1e-3,
+    detectors, score = cs.simulated_annealing(number_of_sensors, target, np.ones_like(target_err), target,
+                                              regularization_coeffient =1e-2,
                                               subsampling_method= "random",
                                               iterations= 5000,
-                                              max_temp= 21,
-                                              cooling= 0.998)
+                                              max_temp= 31,
+                                              cooling= 0.995)
 
     cs.append_array_to_csv(detectors, optlocs_file)
 
-    if n % 20 == 0:
+    if n % 50 == 0:
         print("Iteration {:d} of {:d}".format(n, iterations))

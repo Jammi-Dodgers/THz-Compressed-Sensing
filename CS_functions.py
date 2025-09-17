@@ -155,6 +155,7 @@ def generate_interferogram(array_length, pixel_pitch, central_freq, FWHM_freq, t
 def generate_interferogram2(array_length, pixel_pitch, central_freqs, FWHM_envelope, theta, read_noise_sigma = 0, displacement_shift = 0): # (pixels), (m), (Hz), (m), (degrees), (as a fraction of the peak), (m)
     # FWHM_envelope should equal (2*C*ln(2)) / (sin(theta)*FWHM_freq*pi) but it is slightly different due to ?? windowing? picket fence effect?
     central_freqs = np.atleast_1d(central_freqs)
+    number_of_freqs = len(central_freqs)
     interferogram = np.zeros(array_length, dtype= float)
     displacement = np.arange(-(array_length//2), (array_length+1)//2) *pixel_pitch +displacement_shift #in m
 
@@ -162,6 +163,7 @@ def generate_interferogram2(array_length, pixel_pitch, central_freqs, FWHM_envel
         kappa = 2*np.sin(np.deg2rad(theta))/C * central_freq # apparent wavenumber
         interferogram += np.cos(2*np.pi*displacement*kappa)
 
+    interferogram /= number_of_freqs # normalise by the number of sinosoids so that the peak =1
     interferogram *= np.exp(-4*np.log(2)*displacement**2 *FWHM_envelope**-2) # modulate by the beam size.
     interferogram += np.random.normal(0, read_noise_sigma, array_length)
     return interferogram
