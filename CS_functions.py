@@ -172,11 +172,11 @@ def generate_interferogram2(array_length, pixel_pitch, central_freqs, FWHM_envel
 
 def open_dataset(file_name, file_type):
     if file_type == ".csv":
-        array = np.genfromtxt("data\\" +file_name +file_type, delimiter=",", filling_values= np.nan)
+        array = np.genfromtxt(os.path.join("data", file_name +file_type), delimiter=",", filling_values= np.nan)
         if array.ndim == 2:
             return array.T
     elif file_type == ".txt":
-        array = np.genfromtxt("data\\" +file_name +file_type, delimiter=",", filling_values= np.nan)
+        array = np.genfromtxt(os.path.join("data", file_name +file_type), delimiter=",", filling_values= np.nan)
     else:
         raise ValueError("{0:} is not a recognised file type.".format(file_type))
     return array
