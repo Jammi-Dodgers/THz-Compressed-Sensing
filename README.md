@@ -1,7 +1,5 @@
 TODO write readme file
 
-TODO add figure number to corresponding script name for easy reference
-
 Fig 1. incoherence_and_rip_demo.ipynb
 Fig 2. CS_simulated_annealing.ipynb
 Fig 3. mock_interferograms_1d.ipynb
