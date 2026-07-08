@@ -281,8 +281,8 @@ def evaluate_score(detectors, targets, targets_uncertainty= None, noiseless= Non
         score.append(error)
     
     # score = max(score) # return the worst score
-    score = np.percentile(score, 95) # return a bad score
-    # score = np.mean(score) # return the average score
+    # score = np.percentile(score, 95) # return a bad score
+    score = np.mean(score) # return the average score
 
     return score
 
@@ -439,6 +439,7 @@ def simulated_annealing(reduced_points, target, uncertainty= None, noiseless= No
 
 
 def MCMC_metropolis(reduced_points, target, uncertainty= None, noiseless= None, regularization_coeffient =1e-3, error_type= "RSS", subsampling_method= "regular", min_seperation= 1, iterations= 10000, stepsize= 3):
+    target = np.atleast_1d(target)
 
     if uncertainty is None:
         uncertainty = np.ones_like(target)
@@ -446,7 +447,7 @@ def MCMC_metropolis(reduced_points, target, uncertainty= None, noiseless= None, 
         noiseless = target
         print("WARNING! Noiseless data not provided, assuming interferogram has no noise.")
 
-    total_points = len(target)
+    total_points = target.shape[-1]
 
     detectors = subsample_1d(total_points, reduced_points, subsampling_method)
     detector_configerations = np.array(detectors)
