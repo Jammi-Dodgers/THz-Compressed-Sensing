@@ -230,8 +230,8 @@ def compressed_sensing(samples, alpha, domain= "IDCT", ignore_mean= False, dct_t
     measurement_matrix = np.matmul(cropping_matrix, dct_matrix)
 
     if norm == "ortho":
-        # measurement_matrix *= np.sqrt(len(locations)) # normalisation used in the statistical learning with sparsity book. Very wierd, is this a mistake? "ortho" must be used.
-        measurement_matrix *= np.sqrt(total_points) # standard normalisation used by most other papers. "ortho" must be used.
+        # measurement_matrix *= np.sqrt(len(locations)) # normalisation used in the statistical learning with sparsity book. Very wierd, is this a mistake? "ortho" must be used. ## Wrong. book does not use this extra factor
+        measurement_matrix *= np.sqrt(total_points) # standard normalisation used by most other papers. "ortho" must be used. ## Still very wierd though?? Why is this nessisary at all?
 
     lasso = Lasso(alpha= alpha, fit_intercept= ignore_mean)
     lasso.fit(measurement_matrix, samples[locations])
