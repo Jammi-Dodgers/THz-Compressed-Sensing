@@ -282,7 +282,7 @@ def evaluate_score(detectors, targets, targets_uncertainty= None, noiseless= Non
     
     # score = max(score) # return the worst score
     # score = np.percentile(score, 95) # return a bad score
-    score = np.mean(score) # return the average score
+    score = np.mean(score) # return the average score ## Improves convergence.
 
     return score
 
