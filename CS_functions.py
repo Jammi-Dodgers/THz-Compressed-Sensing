@@ -366,7 +366,7 @@ def RIP(detector, target):
     dct_matrix = spfft.idct(np.identity(total_points), axis= 0, norm= "ortho", type= 1)
     measurement_matrix = np.matmul(cropping_matrix, dct_matrix)
 
-    return RIP_from_phi(measurement_matrix, sparsity)
+    return RIP_from_Phi(measurement_matrix, sparsity)
 
 ############OPTIMISATION FUNCTIONS#################
 
